@@ -6,6 +6,7 @@ import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from DataAnalyser import DataAnalyser
+from pathlib import Path
 
 #class AdcViewerApp(QtGui.QMainWindow):
 class AdcViewerApp(QtWidgets.QMainWindow):
@@ -63,9 +64,11 @@ class AdcViewerApp(QtWidgets.QMainWindow):
 
 if __name__ == "__main__":
 	# Recompile ui
-	with open("adc_view.ui") as ui_file:
-		with open("adc_view.py","w") as py_ui_file:
-			uic.compileUi(ui_file,py_ui_file)
+	ui_file_path = Path("adc_view.ui")
+	if ui_file_path.exists():
+		with open(ui_file_path) as ui_file:
+			with open("adc_view.py","w") as py_ui_file:
+				uic.compileUi(ui_file,py_ui_file)
 
 	app = QtWidgets.QApplication([])
 	main_window = AdcViewerApp("ADC demonstrator")
