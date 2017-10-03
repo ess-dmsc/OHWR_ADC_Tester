@@ -8,6 +8,17 @@ from matplotlib.figure import Figure
 from DataAnalyser import DataAnalyser
 from pathlib import Path
 
+########################################################################
+class StatsTableModel(QtCore.QAbstractTableModel):
+
+	#----------------------------------------------------------------------
+	def __init__(self, headers, parent=None, *args):
+		QtCore.QAbstractTableModel.__init__(self, parent, *args)
+		self.headers = headers
+		self.key_list = []
+		
+	
+
 #class AdcViewerApp(QtGui.QMainWindow):
 class AdcViewerApp(QtWidgets.QMainWindow):
 	def __init__(self, data_dir):
@@ -32,10 +43,16 @@ class AdcViewerApp(QtWidgets.QMainWindow):
 		self.ui.plotFrame.setLayout(layout)
 		self.ax = self.figure.add_subplot(111)
 		y = np.zeros(512)	
-		self.timer = QtCore.QTimer()
-		self.timer.setSingleShot(False)
-		self.timer.timeout.connect(self.on_timer)
-		self.timer.start(500)
+		self.queryTimer = QtCore.QTimer()
+		self.queryTimer.setSingleShot(False)
+		self.queryTimer.timeout.connect(self.on_query_for_packet)
+		self.queryTimer.start(100)
+		
+		self.requestTimer = QtCore.QTimer()
+		self.requestTimer.setSingleShot(False)
+		self.requestTimer.timeout.connect(self.on_request_timer)
+		self.requestTimer.start(500)
+		
 		self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
 	
 	#----------------------------------------------------------------------
@@ -48,16 +65,25 @@ class AdcViewerApp(QtWidgets.QMainWindow):
 		self.canvas.draw()
 	
 	#----------------------------------------------------------------------
-	def on_timer(self):
+	def on_request_timer(self):
+		self.dataAnalyser.request_packet()
+		
+	
+	#----------------------------------------------------------------------
+	def on_query_for_packet(self):
 		data = self.dataAnalyser.get_packet()
 		if data == None:
 			return
-		self.ui.timeStamp.setText(str(data["time_stamp"]))
-		self.plot_data(data["data"])
+		if (len(data["data"]) > 0):
+			self.ui.timeStamp.setText(str(data["data"][0]["M1 timestamp"]))
+			self.plot_data(data["data"][0]["data"])
+		else:
+			self.ui.timeStamp.setText(str(data["Idle timestamp"]["value"]))
 		#self.line.set_ydata(data["data"])
 	
 	def closeEvent(self, event):
-		self.timer.stop()
+		self.requestTimer.stop()
+		self.queryTimer.stop()
 		del self.dataAnalyser
 		event.accept()
 		
@@ -66,7 +92,7 @@ if __name__ == "__main__":
 	# Recompile ui
 	ui_file_path = Path("adc_view.ui")
 	if ui_file_path.exists():
-		with open(ui_file_path) as ui_file:
+		with open(str(ui_file_path)) as ui_file:
 			with open("adc_view.py","w") as py_ui_file:
 				uic.compileUi(ui_file,py_ui_file)
 

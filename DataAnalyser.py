@@ -73,7 +73,7 @@ def parse_data(packet_dict, data, start):
 		ctr += 1
 		unpacked_m_head = struct.unpack(m_head_format, data[m_offset:m_offset + m_head_length])
 		stats_dict = {}
-		prefix = "M{}".format(1)
+		prefix = "M{}".format(ctr)
 		stats_dict[prefix + " timestamp"] = unpacked_m_head[4]
 		samples = (unpacked_m_head[1] + 1 - 3) * 2
 		stats_dict[prefix + " samples"] = samples
@@ -189,6 +189,10 @@ class DataAnalyser():
 		if (self.data_queue.empty()):
 			return None
 		return self.data_queue.get()
+	
+	#----------------------------------------------------------------------
+	def request_packet(self):
+		self.to_thread.put("post_packet")		
 
 if __name__ == "__main__":
 	print("Start")
