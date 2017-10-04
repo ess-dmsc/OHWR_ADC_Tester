@@ -132,7 +132,7 @@ def thread_function(udp_port, data_out, commands_in):
 
     nr_of_packets = 0
     while (True):
-        if (not commands_in.empty()):
+        while (not commands_in.empty()):
             cmd = commands_in.get()
             if (cmd == "post_packet"):
                 post_packet = True

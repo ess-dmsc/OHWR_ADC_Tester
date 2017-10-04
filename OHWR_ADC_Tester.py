@@ -71,7 +71,60 @@ class PlotCtrl:
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.canvas)
         plotFrame.setLayout(layout)
-        self.ax = self.figure.add_subplot(111)
+        self.axes = []
+        self.plot_map = {}
+        self.data_map = {}
+        self.setup_all()
+
+    def clear_figure(self):
+        self.figure.clear()
+
+    def setup_all(self):
+        self.clear_figure()
+        ax1 = self.figure.add_subplot(111)
+        self.axes = [ax1, ]
+        self.plot_map = {0: ax1, 1: ax1, 2:ax1, 3:ax1}
+
+    def setup_12(self):
+        self.clear_figure()
+        ax1 = self.figure.add_subplot(111)
+        self.axes = [ax1, ]
+        self.plot_map = {0: ax1, 1: ax1}
+
+    def setup_34(self):
+        self.clear_figure()
+        ax1 = self.figure.add_subplot(111)
+        self.axes = [ax1, ]
+        self.plot_map = {2: ax1, 3: ax1}
+
+    def setup_12_and_34(self):
+        self.clear_figure()
+        ax1 = self.figure.add_subplot(211)
+        ax2 = self.figure.add_subplot(212)
+        self.axes = [ax1, ax2]
+        self.plot_map = {0: ax1, 1: ax1, 2: ax2, 3: ax2}
+
+    def plot(self, data):
+        for item in data:
+            channel_no = None
+            timestamp = 0
+            for key in item:
+                if "channel" in key:
+                    channel_no = item[key]
+                elif "timestamp" in key:
+                    timestamp = item[key]
+                self.data_map[channel_no] = {"data":item["data"], "ts":timestamp}
+        for ax in self.axes:
+            ax.clear()
+        for ch_no in self.data_map:
+            if ch_no in self.plot_map:
+                self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], label = "Channel {}".format(ch_no + 1), lw = 3)
+        for ax in self.axes:
+            ax.legend()
+            ax.axis([0, None, 0, 16384])
+            ax.set_xlabel("Sample #")
+            ax.set_ylabel("Value")
+        self.canvas.draw()
 
 
 class AdcViewerApp(QtWidgets.QMainWindow):
@@ -117,7 +170,8 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
 
     def on_channels_select(self, index):
-        print("Channels select")
+        select_list = [self.plotCtrl.setup_all, self.plotCtrl.setup_12, self.plotCtrl.setup_34, self.plotCtrl.setup_12_and_34]
+        select_list[index]()
 
     def on_rate_select(self, index):
         rate_list = [2000, 1000, 100]
@@ -146,15 +200,6 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.tableCtrl = StatsTableCtrl(["Stat", "Value", "Errors"], self.ui.statsTable)
 
     #----------------------------------------------------------------------
-    def plot_data(self, data):
-        self.ax.clear()
-        self.ax.plot(data, lw = 3, color = "k")
-        self.ax.axis([0, None, 0, 16384])
-        self.ax.set_xlabel("Sample #")
-        self.ax.set_ylabel("Value")
-        self.canvas.draw()
-
-    #----------------------------------------------------------------------
     def on_request_timer(self):
         self.dataAnalyser.request_packet()
 
@@ -164,7 +209,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         if data == None:
             return
         if (len(data["data"]) > 0):
-            self.plot_data(data["data"][0]["data"])
+            self.plotCtrl.plot(data["data"])
         self.tableCtrl.setStatsDict(data)
         if (self.stop_on_error):
             for key in data:
