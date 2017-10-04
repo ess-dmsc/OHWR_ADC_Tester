@@ -7,4 +7,6 @@ python3.6 -m venv build_env
 source ./build_env/bin/activate
 #pip install --user -r requirements.txt
 pip install -r requirements.txt
+pyinstaller -w OHWR_ADC_Tester.py
+tar czvf OHWR_ADC_Tester.tar.gz -C dist/ OHWR_ADC_Tester/
 ```
