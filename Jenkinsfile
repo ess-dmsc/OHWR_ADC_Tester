@@ -1,4 +1,4 @@
-node ("fedora") {
+node("docker") {
     cleanWs()
     dir("code") {
         stage("Checkout") {
