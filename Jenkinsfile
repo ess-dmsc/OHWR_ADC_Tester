@@ -1,10 +1,13 @@
-node () {
+node ("fedora") {
+    cleanWS()
     dir("code") {
-        try {
-            stage("Checkout project") {
-                checkout scm
-                
-            }
+        stage("Checkout") {
+            scm_vars = checkout scm
+        }
+        
+        stage("Create virtualenv") {
+            sh "/usr/bin/scl enable rh-python35 /bin/bash"
+            sh "python3.5 -m venv build_env"
         }
     }
 }

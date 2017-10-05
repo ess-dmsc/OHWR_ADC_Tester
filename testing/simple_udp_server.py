@@ -11,8 +11,6 @@ pkt3 = bytearray.fromhex("001b222200160000000033334444029f1246feedf00d")
 
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server_address = ('localhost', 12345)
-    sock.bind(server_address)
     data_list = []
     for i in range(2):
         in_file = open("test2_pkt" + str(i + 1) + ".txt")
