@@ -1,5 +1,5 @@
 node ("fedora") {
-    cleanWS()
+    cleanWs()
     dir("code") {
         stage("Checkout") {
             scm_vars = checkout scm
