@@ -13,16 +13,16 @@ def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     server_address = ('localhost', 12345)
     sock.bind(server_address)
-    data_list = [pkt1, pkt2, pkt3]
-    for i in range(5):
-        in_file = open("test_pkt" + str(i + 1) + ".txt")
+    data_list = []
+    for i in range(2):
+        in_file = open("test2_pkt" + str(i + 1) + ".txt")
         in_data = in_file.read()
         data_list.append(bytearray.fromhex(in_data))
     pkt_ctr = 0
     while (True):
         used_data = copy.deepcopy(data_list[pkt_ctr])
-        if (random.random() > 0.9):
-            used_data[-1] = 0
+        # if (random.random() > 0.9):
+        #     used_data[-1] = 0
         sent = sock.sendto(used_data, ('localhost', 65535))
         pkt_ctr += 1
         if (pkt_ctr == len(data_list)):

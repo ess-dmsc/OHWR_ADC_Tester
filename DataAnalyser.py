@@ -75,7 +75,7 @@ def parse_data(packet_dict, data, start):
         stats_dict = {}
         prefix = "M{}".format(ctr)
         stats_dict[prefix + " timestamp"] = unpacked_m_head[4]
-        samples = (unpacked_m_head[1] + 1 - 3) * 2
+        samples = (unpacked_m_head[1] - 3) * 2
         stats_dict[prefix + " samples"] = samples
         stats_dict[prefix + " channel"] = unpacked_m_head[2]
 
