@@ -6,8 +6,7 @@ node("docker") {
         }
         
         stage("Create virtualenv") {
-            sh "/usr/bin/scl enable rh-python35 /bin/bash"
-            sh "python3.5 -m venv build_env"
+            sh "/usr/bin/scl enable rh-python35 /bin/bash & python3.5 -m venv build_env"
         }
     }
 }
