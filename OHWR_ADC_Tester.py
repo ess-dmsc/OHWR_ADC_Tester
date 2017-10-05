@@ -5,6 +5,7 @@ from PyQt5.QtGui import QPainter, QColor, QBrush
 import PyQt5.QtWidgets as QtWidgets
 import PyQt5.uic
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavToolbar
 from matplotlib.figure import Figure
 from DataAnalyser import DataAnalyser
 from pathlib import Path
@@ -68,13 +69,19 @@ class PlotCtrl:
         self.plotFrame = plotFrame
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
+        self.toolbar = NavToolbar(self.canvas, self.plotFrame)
+        self.toolbar.setVisible(False)
         layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         plotFrame.setLayout(layout)
         self.axes = []
         self.plot_map = {}
         self.data_map = {}
         self.setup_all()
+
+    def enable_toolbar(self, enable):
+        self.toolbar.setVisible(bool(enable))
 
     def clear_figure(self):
         self.figure.clear()
@@ -119,6 +126,8 @@ class PlotCtrl:
         for ch_no in self.data_map:
             if ch_no in self.plot_map:
                 self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], label = "Channel {}".format(ch_no + 1), lw = 3)
+                ts_text = "Ch {} TS: {}".format(ch_no + 1, self.data_map[ch_no]["ts"])
+                self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.1, 0.6 - 0.2 * (ch_no % 2)), textcoords='axes fraction')
         for ax in self.axes:
             ax.legend()
             ax.axis([0, None, 0, 16384])
@@ -189,12 +198,14 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.queryTimer.stop()
         self.ui.startButton.setEnabled(True)
         self.ui.stopButton.setEnabled(False)
+        self.plotCtrl.enable_toolbar(True)
 
     def on_start_button(self):
         self.queryTimer.start(50)
         self.requestTimer.start(self.request_delay)
         self.ui.startButton.setEnabled(False)
         self.ui.stopButton.setEnabled(True)
+        self.plotCtrl.enable_toolbar(False)
 
     def setUpTable(self):
         self.tableCtrl = StatsTableCtrl(["Stat", "Value", "Errors"], self.ui.statsTable)
