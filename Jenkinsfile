@@ -21,6 +21,9 @@ node("docker") {
                 --env https_proxy=${env.https_proxy} \
             ")
         sh "docker cp ${project} ${container_name}:/home/jenkins/${project}"
+        sh """docker exec --user root ${container_name} bash -c \"
+            chown -R jenkins.jenkins /home/jenkins/${project}
+        \""""
         
         stage("Create virtualenv") {
             sh """docker exec ${container_name} bash -c \"
