@@ -49,6 +49,8 @@ node("docker") {
                 cd ${project}
                 tar czvf OHWR_ADC_Tester.tar.gz -C dist/ OHWR_ADC_Tester/
             \""""
+            sh "docker cp ${container_name}:/home/jenkins/${project}/OHWR_ADC_Tester.tar.gz ."
+            archiveArtifacts "OHWR_ADC_Tester.tar.gz,GIT_COMMIT"
         }
     } finally {
         container.stop()
