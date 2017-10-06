@@ -10,7 +10,8 @@ node("docker") {
         }
         
         stage("Install packets") {
-            sh "scl enable rh-python35 'source build_env/bin/activate & pip3 install -r requirements.txt'"
+            sh "scl enable rh-python35 'build_env/bin/pip install --upgrade pip'"
+            sh "scl enable rh-python35 'build_env/bin/pip install -r requirements.txt'"
         }
     }
 }
