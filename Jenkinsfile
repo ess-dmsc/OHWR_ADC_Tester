@@ -1,6 +1,6 @@
 project = "ohwr_adc_tester"
 
-fedora = 'essdmscdm/fedora-build-node:0.3.0'
+centos = 'essdmscdm/centos.python-build-node:0.1.0'
 
 container_name = "${project}-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
 
@@ -12,7 +12,7 @@ node("docker") {
         }
     }
     try {
-        image = docker.image(fedora)
+        image = docker.image(centos)
             container = image.run("\
                 --name ${container_name} \
                 --tty \
@@ -28,7 +28,7 @@ node("docker") {
         stage("Create virtualenv") {
             sh """docker exec ${container_name} bash -c \"
                 cd ${project}
-                python3.5 -m venv build_env
+                python3.6 -m venv build_env
             \""""
         }
         
