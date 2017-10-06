@@ -114,7 +114,6 @@ def parse_filler_and_trailer(packet_dict, data, start):
 def thread_function(udp_port, data_out, commands_in):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(("", udp_port))
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_NO_CHECK)
     s.settimeout(0.5)
     post_packet = False
     packet_dict = {"Nr of packets": {"value": 0, "status": True, "errors": 0},
