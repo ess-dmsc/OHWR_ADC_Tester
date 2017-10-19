@@ -1,6 +1,6 @@
 project = "ohwr_adc_tester"
 
-centos = 'essdmscdm/centos.python-build-node:0.1.0'
+centos = 'essdmscdm/centos.python-build-node:0.1.1'
 
 container_name = "${project}-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
 
