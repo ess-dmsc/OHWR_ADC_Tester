@@ -1,13 +1,14 @@
 #  -*- coding: utf-8 -*-
 
 import PyQt5.QtCore as QtCore
-from PyQt5.QtGui import QPainter, QColor, QBrush
+from PyQt5.QtGui import QColor, QBrush
 import PyQt5.QtWidgets as QtWidgets
+from PyQt5.QtWidgets import QFileDialog
 import PyQt5.uic
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavToolbar
 from matplotlib.figure import Figure
-from DataAnalyser import DataAnalyser
+from DataAnalyser import DataAnalyser, PcapReader
 from pathlib import Path
 import copy
 
@@ -136,14 +137,25 @@ class PlotCtrl:
         self.canvas.draw()
 
 
+class SourceWindow(QtWidgets.QDialog):
+    def __init__(self):
+        super(SourceWindow, self).__init__()
+        self.ui = None
+        self.setup()
+
+    def setup(self):
+        import Data_source
+        self.ui = Data_source.Ui_dataSourceDialog()
+        self.ui.setupUi(self)
+
 class AdcViewerApp(QtWidgets.QMainWindow):
-    def __init__(self, data_dir):
+    def __init__(self):
         #Parent constructor
         super(AdcViewerApp,self).__init__()
         self.ui = None
-        self.setup(data_dir)
+        self.setup()
 
-    def setup(self, data_dir):
+    def setup(self):
         import adc_view
         self.ui = adc_view.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -166,17 +178,49 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.queryTimer = QtCore.QTimer()
         self.queryTimer.setSingleShot(False)
         self.queryTimer.timeout.connect(self.on_query_for_packet)
-        self.queryTimer.start(50)
+
 
         self.requestTimer = QtCore.QTimer()
         self.requestTimer.setSingleShot(False)
         self.requestTimer.timeout.connect(self.on_request_timer)
         self.request_delay = 2000
-        self.requestTimer.start(self.request_delay)
         self.ui.startButton.setEnabled(False)
         self.stop_on_error = False
 
-        self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
+        self.sourceWindow = SourceWindow()
+        self.sourceWindow.show()
+        self.sourceWindow.ui.openPcapButton.clicked.connect(self.on_use_pcap)
+        self.sourceWindow.ui.pythonInterpButton.clicked.connect(self.on_python_connect)
+        self.sourceWindow.ui.cppInterpButton.clicked.connect(self.on_python_connect)
+
+        #self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
+
+
+    def start_timers(self):
+        self.queryTimer.start(50)
+        self.requestTimer.start(self.request_delay)
+
+
+    def on_use_pcap(self):
+        self.sourceWindow.hide()
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getOpenFileName(self, "Select PCAP file", "", "Pcap file (*.pcap *.pcapng)", options=options)
+        if (len(fileName) == 0):
+            self.close()
+            return
+        self.dataAnalyser = PcapReader(fileName)
+        self.start_timers()
+        self.show()
+
+    def on_python_connect(self):
+        self.sourceWindow.hide()
+        self.dataAnalyser = DataAnalyser(udp_port=int(self.sourceWindow.ui.pySocket.text()), use_thread=True)
+        self.start_timers()
+        self.show()
+
+    def on_cpp_connect(self):
+        self.sourceWindow.hide()
+        self.show()
 
     def on_channels_select(self, index):
         select_list = [self.plotCtrl.setup_all, self.plotCtrl.setup_12, self.plotCtrl.setup_34, self.plotCtrl.setup_12_and_34]
@@ -243,7 +287,13 @@ if __name__ == "__main__":
             with open("adc_view.py", "w") as py_ui_file:
                 PyQt5.uic.compileUi(ui_file, py_ui_file)
 
+    selector_path = Path("Data_source.ui")
+    if selector_path.exists():
+        with open(str(selector_path)) as ui_file:
+            with open("Data_source.py", "w") as py_ui_file:
+                PyQt5.uic.compileUi(ui_file, py_ui_file)
+
     app = QtWidgets.QApplication([])
-    main_window = AdcViewerApp("ADC demonstrator")
-    main_window.show()
+    main_window = AdcViewerApp()
+    #main_window.show()
     app.exec_()

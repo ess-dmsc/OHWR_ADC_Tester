@@ -40,6 +40,9 @@ def parse_header(packet_dict, data):
         packet_dict["Readout type"]["errors"] += 1
 
     packet_dict["Readout length"]["value"] = unpacked_header[2]
+    if (unpacked_header[2] != len(data)):
+        packet_dict["Readout length"]["status"] = False
+        packet_dict["Readout length"]["errors"] += 1
     packet_dict["Readout counter"]["value"] = unpacked_header[3]
     packet_dict["Readout reserved"]["value"] = unpacked_header[4]
     return head_len
@@ -49,23 +52,23 @@ def parse_idle(packet_dict, data, start):
     idle_format = ">II"
     idle_length = struct.calcsize(idle_format)
     if (len(data[start:]) < idle_length):
-        packet_dict["Idle header"]["status"] = False
-        packet_dict["Idle header"]["errors"] += 1
+        packet_dict["Idle time high"]["status"] = False
+        packet_dict["Idle time high"]["errors"] += 1
 
-        packet_dict["Idle timestamp"]["status"] = False
-        packet_dict["Idle timestamp"]["errors"] += 1
+        packet_dict["Idle time low"]["status"] = False
+        packet_dict["Idle time low"]["errors"] += 1
     unpacked_idle = struct.unpack(idle_format, data[start:start + idle_length])
-    packet_dict["Idle timestamp"]["value"] = unpacked_idle[1]
-    idle_head_str = "0x{:08X}".format(unpacked_idle[0])
-    packet_dict["Idle header"]["value"] = idle_head_str
-    if (idle_head_str != "0x33334444"):
-        packet_dict["Idle header"]["status"] = False
-        packet_dict["Idle header"]["errors"] += 1
+    packet_dict["Idle time low"]["value"] = unpacked_idle[1]
+    #idle_head_str = "0x{:08X}".format(unpacked_idle[0])
+    packet_dict["Idle time high"]["value"] = unpacked_idle[0]
+#    if (idle_head_str != "0x33334444"):
+#        packet_dict["Idle header"]["status"] = False
+#        packet_dict["Idle header"]["errors"] += 1
     return start + idle_length
 
 #----------------------------------------------------------------------
 def parse_data(packet_dict, data, start):
-    m_head_format = ">HHHHI"
+    m_head_format = ">HHHHII"
     m_head_length = struct.calcsize(m_head_format)
     m_offset = start
     ctr = 0
@@ -74,8 +77,9 @@ def parse_data(packet_dict, data, start):
         unpacked_m_head = struct.unpack(m_head_format, data[m_offset:m_offset + m_head_length])
         stats_dict = {}
         prefix = "M{}".format(ctr)
-        stats_dict[prefix + " timestamp"] = unpacked_m_head[4]
-        samples = (unpacked_m_head[1] - 3) * 2
+        stats_dict[prefix + " timestamp"] = unpacked_m_head[5]
+        stats_dict[prefix + " time high"] = unpacked_m_head[4]
+        samples = (unpacked_m_head[1] - 4) * 2
         stats_dict[prefix + " samples"] = samples
         stats_dict[prefix + " channel"] = unpacked_m_head[2]
 
@@ -110,12 +114,7 @@ def parse_filler_and_trailer(packet_dict, data, start):
         packet_dict["Filler size"]["status"] = False
         packet_dict["Filler size"]["errors"] += 1
 
-#----------------------------------------------------------------------
-def thread_function(udp_port, data_out, commands_in):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(("", udp_port))
-    s.settimeout(0.5)
-    post_packet = False
+class PacketCheck():
     packet_dict = {"Nr of packets": {"value": 0, "status": True, "errors": 0},
                    "Packet length": {"value": 0, "status": True, "errors": 0},
                    "Global counter": {"value": 0, "status": True, "errors": 0},
@@ -123,14 +122,39 @@ def thread_function(udp_port, data_out, commands_in):
                    "Readout counter": {"value": 0, "status": True, "errors": 0},
                    "Readout length": {"value": 0, "status": True, "errors": 0},
                    "Readout reserved": {"value": 0, "status": True, "errors": 0},
-                   "Idle header": {"value": 0, "status": True, "errors": 0},
-                   "Idle timestamp": {"value": 0, "status": True, "errors": 0},
+                   "Idle time high": {"value": 0, "status": True, "errors": 0},
+                   "Idle time low": {"value": 0, "status": True, "errors": 0},
                    "data": [],
                    "Filler size": {"value": "", "status": True, "errors": 0},
                    "Filler ok": {"value": "", "status": True, "errors": 0},
                    "0xFEEDF00D": {"value": "", "status": True, "errors": 0}}
-
     nr_of_packets = 0
+    def analyse(self, data):
+        self.packet_dict["data"] = []
+        for key in self.packet_dict:
+            if (key != "data"):
+                self.packet_dict[key]["status"] = True
+                self.packet_dict[key]["value"] = ""
+        self.nr_of_packets += 1
+        self.packet_dict["Nr of packets"]["value"] = self.nr_of_packets
+        self.packet_dict["Packet length"]["value"] = len(data)
+        byte_pos = parse_header(self.packet_dict, data)
+
+        if (self.packet_dict["Readout type"]["value"] == "0x1111"):
+            byte_pos = parse_data(self.packet_dict, data, byte_pos)
+        elif (self.packet_dict["Readout type"]["value"] == "0x2222"):
+            byte_pos = parse_idle(self.packet_dict, data, byte_pos)
+
+        parse_filler_and_trailer(self.packet_dict, data, byte_pos)
+        return self.packet_dict
+
+#----------------------------------------------------------------------
+def thread_function(udp_port, data_out, commands_in):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.bind(("", udp_port))
+    s.settimeout(0.5)
+    post_packet = False
+    analyser = PacketCheck()
     while (True):
         while (not commands_in.empty()):
             cmd = commands_in.get()
@@ -143,27 +167,37 @@ def thread_function(udp_port, data_out, commands_in):
         except socket.timeout:
             continue
 
-        packet_dict["data"] = []
-        for key in packet_dict:
-            if (key != "data"):
-                packet_dict[key]["status"] = True
-                packet_dict[key]["value"] = ""
-        nr_of_packets += 1
-        packet_dict["Nr of packets"]["value"] = nr_of_packets
-        packet_dict["Packet length"]["value"] = len(packet)
-        byte_pos = parse_header(packet_dict, packet)
-
-        if (packet_dict["Readout type"]["value"] == "0x1111"):
-            byte_pos = parse_data(packet_dict, packet, byte_pos)
-        elif (packet_dict["Readout type"]["value"] == "0x2222"):
-            byte_pos = parse_idle(packet_dict, packet, byte_pos)
-
-        parse_filler_and_trailer(packet_dict, packet, byte_pos)
+        packet_dict = analyser.analyse(packet)
 
         if (post_packet):
             data_out.put(packet_dict)
             post_packet = False
     print("Exiting thread")
+
+class PcapReader():
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.data_available = False
+        self.analyser = PacketCheck()
+        self.open_pcap_file()
+
+    def open_pcap_file(self):
+        import pcapy
+        self.receiver = pcapy.open_offline(self.file_name)
+        self.receiver.setfilter("udp dst port 65535")
+
+    def get_packet(self):
+        if not self.data_available:
+            return None
+        self.data_available = False
+        hdr, pkt = self.receiver.next()
+        if (hdr == None):
+            self.open_pcap_file()
+            hdr, pkt = self.receiver.next()
+        return self.analyser.analyse(pkt[42:])
+
+    def request_packet(self):
+        self.data_available = True
 
 ########################################################################
 class DataAnalyser():
