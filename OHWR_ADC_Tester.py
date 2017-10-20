@@ -93,18 +93,6 @@ class PlotCtrl:
         self.axes = [ax1, ]
         self.plot_map = {0: ax1, 1: ax1, 2:ax1, 3:ax1}
 
-    def setup_12(self):
-        self.clear_figure()
-        ax1 = self.figure.add_subplot(111)
-        self.axes = [ax1, ]
-        self.plot_map = {0: ax1, 1: ax1}
-
-    def setup_34(self):
-        self.clear_figure()
-        ax1 = self.figure.add_subplot(111)
-        self.axes = [ax1, ]
-        self.plot_map = {2: ax1, 3: ax1}
-
     def setup_12_and_34(self):
         self.clear_figure()
         ax1 = self.figure.add_subplot(211)
@@ -112,23 +100,36 @@ class PlotCtrl:
         self.axes = [ax1, ax2]
         self.plot_map = {0: ax1, 1: ax1, 2: ax2, 3: ax2}
 
+    def setup_1_2_3_4(self):
+        self.clear_figure()
+        ax1 = self.figure.add_subplot(411)
+        ax2 = self.figure.add_subplot(412)
+        ax3 = self.figure.add_subplot(413)
+        ax4 = self.figure.add_subplot(414)
+        self.axes = [ax1, ax2]
+        self.plot_map = {0: ax1, 1: ax2, 2: ax3, 3: ax4}
+
     def plot(self, data):
+        bbox_props = dict(fc="lightgray", ec="k", alpha = 0.5, lw=2)
         for item in data:
             channel_no = None
             timestamp = 0
+            timestamp_high = 0
             for key in item:
                 if "channel" in key:
                     channel_no = item[key]
                 elif "timestamp" in key:
                     timestamp = item[key]
-                self.data_map[channel_no] = {"data":item["data"], "ts":timestamp}
+                elif "time high" in key:
+                    timestamp_high = item[key]
+                self.data_map[channel_no] = {"data":item["data"], "ts":timestamp, "ts_h":timestamp_high}
         for ax in self.axes:
             ax.clear()
         for ch_no in self.data_map:
             if ch_no in self.plot_map:
                 self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], label = "Channel {}".format(ch_no + 1), lw = 3)
-                ts_text = "Ch {} TS: {}".format(ch_no + 1, self.data_map[ch_no]["ts"])
-                self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.1, 0.6 - 0.2 * (ch_no % 2)), textcoords='axes fraction')
+                ts_text = "Ch {}: {}, {}".format(ch_no + 1, self.data_map[ch_no]["ts_h"], self.data_map[ch_no]["ts"])
+                self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.02 + 0.25 * (len(self.plot_map[ch_no].lines) - 1), 0.02), textcoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', fontsize=8, bbox=bbox_props)
         for ax in self.axes:
             ax.legend()
             ax.axis([0, None, 0, 16384])
@@ -160,7 +161,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.ui = adc_view.Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.channelsSelector.addItems(["All in one", "Ch 1 & 2", "Ch 3 & 4", "1 & 2 and 3 & 4"])
+        self.ui.channelsSelector.addItems(["All in one", "1 & 2 and 3 & 4", "1, 2, 3, 4"])
         self.ui.channelsSelector.currentIndexChanged.connect(self.on_channels_select)
 
         self.ui.rateComboBox.addItems(["0.5 Hz", "1 Hz", "10 Hz"])
@@ -223,7 +224,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.show()
 
     def on_channels_select(self, index):
-        select_list = [self.plotCtrl.setup_all, self.plotCtrl.setup_12, self.plotCtrl.setup_34, self.plotCtrl.setup_12_and_34]
+        select_list = [self.plotCtrl.setup_all, self.plotCtrl.setup_12_and_34, self.plotCtrl.setup_1_2_3_4]
         select_list[index]()
 
     def on_rate_select(self, index):
