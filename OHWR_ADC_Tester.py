@@ -118,9 +118,9 @@ class PlotCtrl:
             for key in item:
                 if "channel" in key:
                     channel_no = item[key]
-                elif "timestamp" in key:
+                elif "TS frac" in key:
                     timestamp = item[key]
-                elif "time high" in key:
+                elif "TS int" in key:
                     timestamp_high = item[key]
                 self.data_map[channel_no] = {"data":item["data"], "ts":timestamp, "ts_h":timestamp_high}
         for ax in self.axes:
@@ -129,7 +129,7 @@ class PlotCtrl:
             if ch_no in self.plot_map:
                 self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], label = "Channel {}".format(ch_no + 1), lw = 3)
                 ts_text = "Ch {}: {}, {}".format(ch_no + 1, self.data_map[ch_no]["ts_h"], self.data_map[ch_no]["ts"])
-                self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.02 + 0.25 * (len(self.plot_map[ch_no].lines) - 1), 0.02), textcoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', fontsize=8, bbox=bbox_props)
+                self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.02 + 0.3 * (len(self.plot_map[ch_no].lines) - 1), 0.02), textcoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', fontsize=8, bbox=bbox_props)
         for ax in self.axes:
             ax.legend()
             ax.axis([0, None, 0, 16384])
@@ -165,6 +165,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.ui.channelsSelector.currentIndexChanged.connect(self.on_channels_select)
 
         self.ui.rateComboBox.addItems(["0.5 Hz", "1 Hz", "10 Hz"])
+        self.ui.rateComboBox.setCurrentIndex(2)
         self.ui.rateComboBox.currentIndexChanged.connect(self.on_rate_select)
 
         self.ui.startButton.clicked.connect(self.on_start_button)
@@ -184,7 +185,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.requestTimer = QtCore.QTimer()
         self.requestTimer.setSingleShot(False)
         self.requestTimer.timeout.connect(self.on_request_timer)
-        self.request_delay = 2000
+        self.request_delay = 100
         self.ui.startButton.setEnabled(False)
         self.stop_on_error = False
 

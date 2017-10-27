@@ -14,37 +14,37 @@ def parse_header(packet_dict, data):
     header_format = ">HHHHH"
     head_len = struct.calcsize(header_format)
     if (len(data) < head_len):
-        packet_dict["Global counter"]["status"] = False
-        packet_dict["Global counter"]["errors"] += 1
+        packet_dict["Global count"]["status"] = False
+        packet_dict["Global count"]["errors"] += 1
 
-        packet_dict["Readout counter"]["status"] = False
-        packet_dict["Readout counter"]["errors"] += 1
+        packet_dict["Readout count"]["status"] = False
+        packet_dict["Readout count"]["errors"] += 1
 
-        packet_dict["Readout type"]["status"] = False
-        packet_dict["Readout type"]["errors"] += 1
+        packet_dict["Type"]["status"] = False
+        packet_dict["Type"]["errors"] += 1
 
         packet_dict["Readout length"]["status"] = False
         packet_dict["Readout length"]["errors"] += 1
 
-        packet_dict["Readout reserved"]["status"] = False
-        packet_dict["Readout reserved"]["errors"] += 1
+        packet_dict["Reserved"]["status"] = False
+        packet_dict["Reserved"]["errors"] += 1
         return 0
     unpacked_header = struct.unpack(header_format, data[0:head_len])
-    packet_dict["Global counter"]["value"] = unpacked_header[0]
+    packet_dict["Global count"]["value"] = unpacked_header[0]
     readout_type_str = "0x{:04X}".format(unpacked_header[1])
-    packet_dict["Readout type"]["value"] = readout_type_str
+    packet_dict["Type"]["value"] = readout_type_str
     if (readout_type_str == "0x2222" or readout_type_str == "0x1111"):
-        packet_dict["Readout type"]["status"] = True
+        packet_dict["Type"]["status"] = True
     else:
-        packet_dict["Readout type"]["status"] = False
-        packet_dict["Readout type"]["errors"] += 1
+        packet_dict["Type"]["status"] = False
+        packet_dict["Type"]["errors"] += 1
 
     packet_dict["Readout length"]["value"] = unpacked_header[2]
-    if (unpacked_header[2] != len(data)):
+    if (unpacked_header[2] != len(data) - 2):
         packet_dict["Readout length"]["status"] = False
         packet_dict["Readout length"]["errors"] += 1
-    packet_dict["Readout counter"]["value"] = unpacked_header[3]
-    packet_dict["Readout reserved"]["value"] = unpacked_header[4]
+    packet_dict["Readout count"]["value"] = unpacked_header[3]
+    packet_dict["Reserved"]["value"] = unpacked_header[4]
     return head_len
 
 #----------------------------------------------------------------------
@@ -52,15 +52,15 @@ def parse_idle(packet_dict, data, start):
     idle_format = ">II"
     idle_length = struct.calcsize(idle_format)
     if (len(data[start:]) < idle_length):
-        packet_dict["Idle time high"]["status"] = False
-        packet_dict["Idle time high"]["errors"] += 1
+        packet_dict["Idle TS int"]["status"] = False
+        packet_dict["Idle TS int"]["errors"] += 1
 
-        packet_dict["Idle time low"]["status"] = False
-        packet_dict["Idle time low"]["errors"] += 1
+        packet_dict["Idle TS frac"]["status"] = False
+        packet_dict["Idle TS frac"]["errors"] += 1
     unpacked_idle = struct.unpack(idle_format, data[start:start + idle_length])
-    packet_dict["Idle time low"]["value"] = unpacked_idle[1]
+    packet_dict["Idle TS frac"]["value"] = unpacked_idle[1]
     #idle_head_str = "0x{:08X}".format(unpacked_idle[0])
-    packet_dict["Idle time high"]["value"] = unpacked_idle[0]
+    packet_dict["Idle TS int"]["value"] = unpacked_idle[0]
 #    if (idle_head_str != "0x33334444"):
 #        packet_dict["Idle header"]["status"] = False
 #        packet_dict["Idle header"]["errors"] += 1
@@ -77,11 +77,14 @@ def parse_data(packet_dict, data, start):
         unpacked_m_head = struct.unpack(m_head_format, data[m_offset:m_offset + m_head_length])
         stats_dict = {}
         prefix = "M{}".format(ctr)
-        stats_dict[prefix + " timestamp"] = unpacked_m_head[5]
-        stats_dict[prefix + " time high"] = unpacked_m_head[4]
+        stats_dict[prefix + " magic"] = "0x{:04X}".format(unpacked_m_head[0])
+        stats_dict[prefix + " length"] = unpacked_m_head[1]
+        stats_dict[prefix + " channel"] = unpacked_m_head[2]
+        stats_dict[prefix + " fragment"] = unpacked_m_head[3]
+        stats_dict[prefix + " TS int"] = unpacked_m_head[4]
+        stats_dict[prefix + " TS frac"] = unpacked_m_head[5]
         samples = (unpacked_m_head[1] - 4) * 2
         stats_dict[prefix + " samples"] = samples
-        stats_dict[prefix + " channel"] = unpacked_m_head[2]
 
         sample_data = np.fromstring(data[m_offset + m_head_length:m_offset + m_head_length + samples * 2], dtype = np.dtype(">H"))
         stats_dict["data"] = sample_data
@@ -93,14 +96,14 @@ def parse_data(packet_dict, data, start):
 #----------------------------------------------------------------------
 def parse_filler_and_trailer(packet_dict, data, start):
     if (len(data[start:]) < 4):
-        packet_dict["0xFEEDF00D"]["status"] = False
-        packet_dict["0xFEEDF00D"]["errors"] += 1
-        packet_dict["0xFEEDF00D"]["value"] = ""
+        packet_dict["Trailer"]["status"] = False
+        packet_dict["Trailer"]["errors"] += 1
+        packet_dict["Trailer"]["value"] = ""
         return
-    packet_dict["0xFEEDF00D"]["value"] = "0x{:04X}".format(struct.unpack(">I", data[-4:])[0])
-    if (packet_dict["0xFEEDF00D"]["value"] != "0xFEEDF00D"):
-        packet_dict["0xFEEDF00D"]["status"] = False
-        packet_dict["0xFEEDF00D"]["errors"] += 1
+    packet_dict["Trailer"]["value"] = "0x{:04X}".format(struct.unpack(">I", data[-4:])[0])
+    if (packet_dict["Trailer"]["value"] != "0xFEEDF00D"):
+        packet_dict["Trailer"]["status"] = False
+        packet_dict["Trailer"]["errors"] += 1
 
     packet_dict["Filler ok"]["value"] = "YES"
     for i in range(start, len(data) - 4):
@@ -117,17 +120,17 @@ def parse_filler_and_trailer(packet_dict, data, start):
 class PacketCheck():
     packet_dict = {"Nr of packets": {"value": 0, "status": True, "errors": 0},
                    "Packet length": {"value": 0, "status": True, "errors": 0},
-                   "Global counter": {"value": 0, "status": True, "errors": 0},
-                   "Readout type": {"value": 0, "status": True, "errors": 0},
-                   "Readout counter": {"value": 0, "status": True, "errors": 0},
+                   "Global count": {"value": 0, "status": True, "errors": 0},
+                   "Type": {"value": 0, "status": True, "errors": 0},
+                   "Readout count": {"value": 0, "status": True, "errors": 0},
                    "Readout length": {"value": 0, "status": True, "errors": 0},
-                   "Readout reserved": {"value": 0, "status": True, "errors": 0},
-                   "Idle time high": {"value": 0, "status": True, "errors": 0},
-                   "Idle time low": {"value": 0, "status": True, "errors": 0},
+                   "Reserved": {"value": 0, "status": True, "errors": 0},
+                   "Idle TS int": {"value": 0, "status": True, "errors": 0},
+                   "Idle TS frac": {"value": 0, "status": True, "errors": 0},
                    "data": [],
                    "Filler size": {"value": "", "status": True, "errors": 0},
                    "Filler ok": {"value": "", "status": True, "errors": 0},
-                   "0xFEEDF00D": {"value": "", "status": True, "errors": 0}}
+                   "Trailer": {"value": "", "status": True, "errors": 0}}
     nr_of_packets = 0
     def analyse(self, data):
         self.packet_dict["data"] = []
@@ -140,9 +143,9 @@ class PacketCheck():
         self.packet_dict["Packet length"]["value"] = len(data)
         byte_pos = parse_header(self.packet_dict, data)
 
-        if (self.packet_dict["Readout type"]["value"] == "0x1111"):
+        if (self.packet_dict["Type"]["value"] == "0x1111"):
             byte_pos = parse_data(self.packet_dict, data, byte_pos)
-        elif (self.packet_dict["Readout type"]["value"] == "0x2222"):
+        elif (self.packet_dict["Type"]["value"] == "0x2222"):
             byte_pos = parse_idle(self.packet_dict, data, byte_pos)
 
         parse_filler_and_trailer(self.packet_dict, data, byte_pos)
