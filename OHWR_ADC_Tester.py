@@ -8,7 +8,7 @@ import PyQt5.uic
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavToolbar
 from matplotlib.figure import Figure
-from DataAnalyser import DataAnalyser, PcapReader
+from DataAnalyser import DataAnalyser, PcapReader, CppReader
 from pathlib import Path
 import copy
 
@@ -106,7 +106,7 @@ class PlotCtrl:
         ax2 = self.figure.add_subplot(412)
         ax3 = self.figure.add_subplot(413)
         ax4 = self.figure.add_subplot(414)
-        self.axes = [ax1, ax2]
+        self.axes = [ax1, ax2, ax3, ax4]
         self.plot_map = {0: ax1, 1: ax2, 2: ax3, 3: ax4}
 
     def plot(self, data):
@@ -193,7 +193,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.sourceWindow.show()
         self.sourceWindow.ui.openPcapButton.clicked.connect(self.on_use_pcap)
         self.sourceWindow.ui.pythonInterpButton.clicked.connect(self.on_python_connect)
-        self.sourceWindow.ui.cppInterpButton.clicked.connect(self.on_python_connect)
+        self.sourceWindow.ui.cppInterpButton.clicked.connect(self.on_use_cpp)
 
         #self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
 
@@ -211,6 +211,12 @@ class AdcViewerApp(QtWidgets.QMainWindow):
             self.close()
             return
         self.dataAnalyser = PcapReader(fileName)
+        self.start_timers()
+        self.show()
+
+    def on_use_cpp(self):
+        self.sourceWindow.hide()
+        self.dataAnalyser = CppReader(udp_port = int(self.sourceWindow.ui.cppSocket.text()), concat_samples=int(self.sourceWindow.ui.nrOfSamples.text()))
         self.start_timers()
         self.show()
 
