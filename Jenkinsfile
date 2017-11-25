@@ -40,6 +40,13 @@ node("docker") {
             \""""
         }
         
+        stage("Build C++ code") {
+            sh """docker exec ${container_name} bash -c \"
+                cd ${project}
+                cmake cpp_src -DCMAKE_BUILD_TYPE=Release
+            \""""
+        }
+        
         stage("Create package") {
             sh """docker exec ${container_name} bash -c \"
                 cd ${project}
