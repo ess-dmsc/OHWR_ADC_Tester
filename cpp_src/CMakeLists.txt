@@ -16,8 +16,8 @@ download_project(PROJ                pybind11
   GIT_REPOSITORY      https://github.com/pybind/pybind11.git
   GIT_TAG             master
   ${UPDATE_DISCONNECTED_IF_AVAILABLE})
-# add_subdirectory(pybind11)
-add_subdirectory(${pybind11_SOURCE_DIR})
+
+add_subdirectory(${pybind11_SOURCE_DIR} ${pybind11_BINARY_DIR})
 
 set(ADC_SRC Socket.cpp AdcReadout.cpp AdcParse.cpp)
 set(ADC_INC AdcReadout.h CircularBuffer.h atomicops.h Detector.h readerwriterqueue.h Socket.h AdcParse.h AdcBufferElements.h)

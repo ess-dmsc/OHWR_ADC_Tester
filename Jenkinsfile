@@ -44,6 +44,7 @@ node("docker") {
             sh """docker exec ${container_name} bash -c \"
                 cd ${project}
                 cmake cpp_src -DCMAKE_BUILD_TYPE=Release
+                make
             \""""
         }
         
