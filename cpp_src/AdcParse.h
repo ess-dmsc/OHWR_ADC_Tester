@@ -26,9 +26,10 @@ struct AdcData {
 };
 
 enum class PacketType {Idle, Data, Unknown};
+
 struct HeaderInfo {
   bool HeaderOk = true;
-  PacketType PacketType = PacketType::Unknown;
+  PacketType Type = PacketType::Unknown;
   std::int32_t DataStart = 0;
 };
 
