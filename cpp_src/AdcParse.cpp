@@ -8,6 +8,7 @@
 
 #include "AdcParse.h"
 #include <arpa/inet.h>
+#include <netinet/in.h>
 
 HeaderInfo parseHeader(const InData &Packet) {
   HeaderInfo ReturnInfo;
