@@ -9,6 +9,7 @@
 #pragma once
 
 #include <vector>
+#include <netinet/in.h>
 #include "AdcBufferElements.h"
 
 struct DataModule {
