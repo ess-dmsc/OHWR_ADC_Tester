@@ -21,13 +21,13 @@ HeaderInfo parseHeader(const InData &Packet) {
   Header.fixEndian();
   switch (Header.PacketType) {
     case 0x1111:
-      ReturnInfo.PacketType = HeaderInfo::PacketType::Data;
+      ReturnInfo.PacketType = PacketType::Data;
       break;
     case 0x2222:
-      ReturnInfo.PacketType = HeaderInfo::PacketType::Idle;
+      ReturnInfo.PacketType = PacketType::Idle;
       break;
     default:
-      ReturnInfo.PacketType = HeaderInfo::PacketType::Unknown;
+      ReturnInfo.PacketType = PacketType::Unknown;
       ReturnInfo.HeaderOk = false;
       break;
   }
@@ -98,7 +98,7 @@ std::vector<DataModule> parsePacket(const InData &Packet) {
     return ReturnData;
   }
   AdcData Data;
-  if (HeaderInfo::PacketType::Data == Header.PacketType) {
+  if (PacketType::Data == Header.PacketType) {
     Data = parseData(Packet, Header.DataStart);
     if (not Data.DataOk) {
       return ReturnData;
