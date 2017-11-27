@@ -10,6 +10,7 @@
 
 #include <mutex>
 #include <array>
+#include <cstdint>
 #include "Detector.h"
 #include "CircularBuffer.h"
 #include "AdcBufferElements.h"

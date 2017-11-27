@@ -10,6 +10,7 @@
 
 #include <vector>
 #include <netinet/in.h>
+#include <cstdint>
 #include "AdcBufferElements.h"
 
 struct DataModule {
