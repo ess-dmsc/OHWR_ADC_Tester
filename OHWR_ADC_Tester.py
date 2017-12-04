@@ -1,5 +1,4 @@
 #  -*- coding: utf-8 -*-
-
 import PyQt5.QtCore as QtCore
 from PyQt5.QtGui import QColor, QBrush
 import PyQt5.QtWidgets as QtWidgets
@@ -133,6 +132,7 @@ class PlotCtrl:
         for ax in self.axes:
             ax.legend()
             ax.axis([0, None, 0, 16384])
+            #ax.axis([0, None, 0, 8220])
             ax.set_xlabel("Sample #")
             ax.set_ylabel("Value")
         self.canvas.draw()
