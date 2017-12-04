@@ -126,7 +126,7 @@ class PlotCtrl:
             ax.clear()
         for ch_no in self.data_map:
             if ch_no in self.plot_map:
-                self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], label = "Channel {}".format(ch_no + 1), lw = 3)
+                self.plot_map[ch_no].plot(self.data_map[ch_no]["data"], linestyle = "--", label = "Channel {}".format(ch_no + 1), lw = 3)
                 ts_text = "Ch {}: {}, {}".format(ch_no + 1, self.data_map[ch_no]["ts_h"], self.data_map[ch_no]["ts"])
                 self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.02 + 0.3 * (len(self.plot_map[ch_no].lines) - 1), 0.02), textcoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', fontsize=8, bbox=bbox_props)
         for ax in self.axes:
