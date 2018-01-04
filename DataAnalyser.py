@@ -89,20 +89,27 @@ def parse_data(packet_dict, data, start):
         stats_dict[prefix + " fragment"] = unpacked_m_head[3]
         stats_dict[prefix + " TS int"] = unpacked_m_head[4]
         stats_dict[prefix + " TS frac"] = unpacked_m_head[5]
-        samples = (unpacked_m_head[1] - 4) * 2
+        samples = (unpacked_m_head[1] - 20) // 2
         if (samples <= 0):
             packet_dict["Data modules"]["errors"] += 1
             packet_dict["Data modules"]["status"] = False
-            continue
+            break
         stats_dict[prefix + " samples"] = samples
 
-        sample_data = np.fromstring(data[m_offset + m_head_length:m_offset + m_head_length + samples * 2], dtype = np.dtype(">H"))
+        data_start = m_offset + m_head_length
+        data_stop = m_offset + m_head_length + samples * 2
+
+        if (data_start >= len(data) or data_stop + 4>= len(data)):
+            packet_dict["Data modules"]["errors"] += 1
+            packet_dict["Data modules"]["status"] = False
+            break
+        sample_data = np.fromstring(data[data_start:data_stop], dtype = np.dtype(">H"))
         stats_dict["data"] = sample_data
-        trailer_data = data[m_offset + m_head_length + samples * 2:m_offset + m_head_length + samples * 2+4]
+        trailer_data = data[data_stop:data_stop + 4]
         if (len(trailer_data) != 4):
             packet_dict["Data modules"]["errors"] += 1
             packet_dict["Data modules"]["status"] = False
-            continue
+            break
         trailer_string = "0x{:04X}".format(struct.unpack(">I", trailer_data)[0])
         if (trailer_string != "0xBEEFCAFE"):
             packet_dict["Data modules"]["errors"] += 1

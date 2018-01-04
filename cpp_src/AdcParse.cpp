@@ -47,7 +47,7 @@ AdcData parseData(const InData &Packet, std::uint32_t StartByte) {
     if (0xABCD != Header.MagicValue) {
       break;
     }
-    std::uint16_t NrOfSamples = (Header.Length - 4) * 2;
+    std::uint16_t NrOfSamples = (Header.Length - 20) * 2;
     if (StartByte + sizeof(DataHeader) + NrOfSamples * sizeof(std::uint16_t) + 4> Packet.Length) {
       ReturnData.DataOk = false;
       break;
