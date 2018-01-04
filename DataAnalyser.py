@@ -74,22 +74,40 @@ def parse_data(packet_dict, data, start):
     m_offset = start
     ctr = 0
     while (len(data) - m_offset > m_head_length + 4 and data[m_offset:m_offset + 2] == bytes([0xab, 0xcd])):
+        packet_dict["Data modules"]["value"] += 1
         ctr += 1
         unpacked_m_head = struct.unpack(m_head_format, data[m_offset:m_offset + m_head_length])
         stats_dict = {}
         prefix = "M{}".format(ctr)
-        stats_dict[prefix + " magic"] = "0x{:04X}".format(unpacked_m_head[0])
+        magic_string = "0x{:04X}".format(unpacked_m_head[0])
+        if (magic_string != "0xABCD"):
+            packet_dict["Data modules"]["errors"] += 1
+            packet_dict["Data modules"]["status"] = False
+        stats_dict[prefix + " magic"] = magic_string
         stats_dict[prefix + " length"] = unpacked_m_head[1]
         stats_dict[prefix + " channel"] = unpacked_m_head[2]
         stats_dict[prefix + " fragment"] = unpacked_m_head[3]
         stats_dict[prefix + " TS int"] = unpacked_m_head[4]
         stats_dict[prefix + " TS frac"] = unpacked_m_head[5]
         samples = (unpacked_m_head[1] - 4) * 2
+        if (samples <= 0):
+            packet_dict["Data modules"]["errors"] += 1
+            packet_dict["Data modules"]["status"] = False
+            continue
         stats_dict[prefix + " samples"] = samples
 
         sample_data = np.fromstring(data[m_offset + m_head_length:m_offset + m_head_length + samples * 2], dtype = np.dtype(">H"))
         stats_dict["data"] = sample_data
-        stats_dict[prefix + " trailer"] = "0x{:04X}".format(struct.unpack(">I", data[m_offset + m_head_length + samples * 2:m_offset + m_head_length + samples * 2+4])[0])
+        trailer_data = data[m_offset + m_head_length + samples * 2:m_offset + m_head_length + samples * 2+4]
+        if (len(trailer_data) != 4):
+            packet_dict["Data modules"]["errors"] += 1
+            packet_dict["Data modules"]["status"] = False
+            continue
+        trailer_string = "0x{:04X}".format(struct.unpack(">I", trailer_data)[0])
+        if (trailer_string != "0xBEEFCAFE"):
+            packet_dict["Data modules"]["errors"] += 1
+            packet_dict["Data modules"]["status"] = False
+        stats_dict[prefix + " trailer"] = trailer_string
         m_offset = m_offset + m_head_length + samples * 2 + 4
         packet_dict["data"].append(stats_dict)
     return m_offset
@@ -126,6 +144,7 @@ class PacketCheck():
                    "Readout count": {"value": 0, "status": True, "errors": 0},
                    "Readout length": {"value": 0, "status": True, "errors": 0},
                    "Reserved": {"value": 0, "status": True, "errors": 0},
+                   "Data modules": {"value": 0, "status": True, "errors": 0},
                    "Idle TS int": {"value": 0, "status": True, "errors": 0},
                    "Idle TS frac": {"value": 0, "status": True, "errors": 0},
                    "data": [],
@@ -136,12 +155,13 @@ class PacketCheck():
     def analyse(self, data):
         self.packet_dict["data"] = []
         for key in self.packet_dict:
-            if (key != "data"):
+            if (key != "data" and key != "Data modules"):
                 self.packet_dict[key]["status"] = True
                 self.packet_dict[key]["value"] = ""
         self.nr_of_packets += 1
         self.packet_dict["Nr of packets"]["value"] = self.nr_of_packets
         self.packet_dict["Packet length"]["value"] = len(data)
+        self.packet_dict["Data modules"]["status"] = True
         byte_pos = parse_header(self.packet_dict, data)
 
         if (self.packet_dict["Type"]["value"] == "0x1111"):
