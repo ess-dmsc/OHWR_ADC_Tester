@@ -7,7 +7,7 @@ import PyQt5.uic
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavToolbar
 from matplotlib.figure import Figure
-from DataAnalyser import DataAnalyser
+from DataAnalyser import DataAnalyser, PcapReader, CppReader
 from pathlib import Path
 import copy
 
@@ -191,7 +191,9 @@ class AdcViewerApp(QtWidgets.QMainWindow):
 
         self.sourceWindow = SourceWindow()
         self.sourceWindow.show()
+        self.sourceWindow.ui.openPcapButton.clicked.connect(self.on_use_pcap)
         self.sourceWindow.ui.pythonInterpButton.clicked.connect(self.on_python_connect)
+        self.sourceWindow.ui.cppInterpButton.clicked.connect(self.on_use_cpp)
 
         #self.dataAnalyser = DataAnalyser(udp_port = 65535, use_thread = True)
 
@@ -200,10 +202,32 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.queryTimer.start(50)
         self.requestTimer.start(self.request_delay)
 
+
+    def on_use_pcap(self):
+        self.sourceWindow.hide()
+        options = QFileDialog.Options()
+        fileName, _ = QFileDialog.getOpenFileName(self, "Select PCAP file", "", "Pcap file (*.pcap *.pcapng)", options=options)
+        if (len(fileName) == 0):
+            self.close()
+            return
+        self.dataAnalyser = PcapReader(fileName)
+        self.start_timers()
+        self.show()
+
+    def on_use_cpp(self):
+        self.sourceWindow.hide()
+        self.dataAnalyser = CppReader(udp_port = int(self.sourceWindow.ui.cppSocket.text()), concat_samples=int(self.sourceWindow.ui.nrOfSamples.text()))
+        self.start_timers()
+        self.show()
+
     def on_python_connect(self):
         self.sourceWindow.hide()
         self.dataAnalyser = DataAnalyser(udp_port=int(self.sourceWindow.ui.pySocket.text()), use_thread=True)
         self.start_timers()
+        self.show()
+
+    def on_cpp_connect(self):
+        self.sourceWindow.hide()
         self.show()
 
     def on_channels_select(self, index):
