@@ -8,7 +8,6 @@ from threading import Thread
 from queue import Queue as tQueue
 import time
 import numpy as np
-import AdcReadout
 
 #----------------------------------------------------------------------
 def parse_header(packet_dict, data):
@@ -204,61 +203,6 @@ def thread_function(udp_port, data_out, commands_in):
             data_out.put(packet_dict)
             post_packet = False
     print("Exiting thread")
-
-class PcapReader():
-    def __init__(self, file_name):
-        self.file_name = file_name
-        self.data_available = False
-        self.once = True
-        self.analyser = PacketCheck()
-        self.open_pcap_file()
-
-    def open_pcap_file(self):
-        import pcapy
-        self.receiver = pcapy.open_offline(self.file_name)
-        self.receiver.setfilter("udp dst port 65535")
-
-    def get_packet(self):
-        if not self.data_available:
-            return None
-        self.data_available = False
-        hdr, pkt = self.receiver.next()
-        if (hdr == None):
-            self.open_pcap_file()
-            hdr, pkt = self.receiver.next()
-        if (self.once):
-            binary_data_file = open("test_packet.dat", "wb")
-            binary_data_file.write(pkt[42:])
-            binary_data_file.close()
-            self.once = False
-        return self.analyser.analyse(pkt[42:])
-
-    def request_packet(self):
-        self.data_available = True
-
-class CppReader():
-    def __init__(self, udp_port, concat_samples):
-        self.reader = AdcReadout.AdcReadout(udp_port, concat_samples)
-        self.reader.startThreads()
-        self.data_available = False
-
-    def __del__(self):
-        self.reader.stopThreads()
-
-    def get_packet(self):
-        if (not self.data_available):
-            return None
-        self.data_available = False
-        SampleData = self.reader.getSamples()
-        packet_dict = {"data":[],}
-        for i in range(0, 4):
-            samples = np.array(SampleData.Samples[i])
-            ts = SampleData.TimeStamps[i]
-            packet_dict["data"].append({"data":samples, "{} TS int".format(i + 1):ts.Seconds, "{} TS frac".format(i + 1):ts.SecondsFraction, "{} samples".format(i + 1):len(samples), "{} channel".format(i + 1):i})
-        return packet_dict
-
-    def request_packet(self):
-        self.data_available = True
 
 ########################################################################
 class DataAnalyser():
