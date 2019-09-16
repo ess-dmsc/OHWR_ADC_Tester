@@ -12,11 +12,9 @@ import AdcReadout
 
 #----------------------------------------------------------------------
 def parse_header(packet_dict, data):
-    header_format = ">HHHHH"
+    header_format = ">HHHHII"
     head_len = struct.calcsize(header_format)
     if (len(data) < head_len):
-        packet_dict["Global count"]["status"] = False
-        packet_dict["Global count"]["errors"] += 1
 
         packet_dict["Readout count"]["status"] = False
         packet_dict["Readout count"]["errors"] += 1
@@ -31,8 +29,7 @@ def parse_header(packet_dict, data):
         packet_dict["Reserved"]["errors"] += 1
         return 0
     unpacked_header = struct.unpack(header_format, data[0:head_len])
-    packet_dict["Global count"]["value"] = unpacked_header[0]
-    readout_type_str = "0x{:04X}".format(unpacked_header[1])
+    readout_type_str = "0x{:04X}".format(unpacked_header[0])
     packet_dict["Type"]["value"] = readout_type_str
     if (readout_type_str == "0x2222" or readout_type_str == "0x1111"):
         packet_dict["Type"]["status"] = True
@@ -40,12 +37,12 @@ def parse_header(packet_dict, data):
         packet_dict["Type"]["status"] = False
         packet_dict["Type"]["errors"] += 1
 
-    packet_dict["Readout length"]["value"] = unpacked_header[2]
-    if (unpacked_header[2] != len(data) - 2):
+    packet_dict["Readout length"]["value"] = unpacked_header[1]
+    if (unpacked_header[1] != len(data) - 8):
         packet_dict["Readout length"]["status"] = False
         packet_dict["Readout length"]["errors"] += 1
-    packet_dict["Readout count"]["value"] = unpacked_header[3]
-    packet_dict["Reserved"]["value"] = unpacked_header[4]
+    packet_dict["Readout count"]["value"] = unpacked_header[2]
+    packet_dict["Reserved"]["value"] = unpacked_header[3]
     return head_len
 
 #----------------------------------------------------------------------
@@ -146,7 +143,6 @@ def parse_filler_and_trailer(packet_dict, data, start):
 class PacketCheck():
     packet_dict = {"Nr of packets": {"value": 0, "status": True, "errors": 0},
                    "Packet length": {"value": 0, "status": True, "errors": 0},
-                   "Global count": {"value": 0, "status": True, "errors": 0},
                    "Type": {"value": 0, "status": True, "errors": 0},
                    "Readout count": {"value": 0, "status": True, "errors": 0},
                    "Readout length": {"value": 0, "status": True, "errors": 0},

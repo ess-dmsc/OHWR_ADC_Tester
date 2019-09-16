@@ -41,16 +41,18 @@ struct TrailerInfo {
 
 #pragma pack(push, 2)
 struct PacketHeader {
-  std::uint16_t GlobalCount;
   std::uint16_t PacketType;
   std::uint16_t ReadoutLength;
   std::uint16_t RedoutCount;
   std::uint16_t Reserved;
+  std::uint32_t Seconds;
+  std::uint32_t SecondsFrac;
   void fixEndian() {
-    GlobalCount = ntohs(GlobalCount);
     PacketType = ntohs(PacketType);
     ReadoutLength = ntohs(ReadoutLength);
     RedoutCount = ntohs(RedoutCount);
+    Seconds = ntohl(Seconds);
+    SecondsFrac = ntohl(SecondsFrac);
   }
 };
 

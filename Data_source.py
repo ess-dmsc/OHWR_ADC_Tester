@@ -2,11 +2,12 @@
 
 # Form implementation generated from reading ui file 'Data_source.ui'
 #
-# Created by: PyQt5 UI code generator 5.9
+# Created by: PyQt5 UI code generator 5.12.2
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_dataSourceDialog(object):
     def setupUi(self, dataSourceDialog):
@@ -22,7 +23,6 @@ class Ui_dataSourceDialog(object):
         self.widget.setSizePolicy(sizePolicy)
         self.widget.setObjectName("widget")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.widget)
-        self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
         self.gridLayout_2.setObjectName("gridLayout_2")
         self.horizontalLayout = QtWidgets.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -131,4 +131,5 @@ class Ui_dataSourceDialog(object):
         self.concatlabel.setText(_translate("dataSourceDialog", "# of samples"))
         self.nrOfSamples.setText(_translate("dataSourceDialog", "500"))
         self.cppInterpButton.setText(_translate("dataSourceDialog", "Open UDP stream"))
+
 

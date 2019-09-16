@@ -131,8 +131,9 @@ class PlotCtrl:
                 self.plot_map[ch_no].annotate(ts_text, xy=(0,0), xytext=(0.02 + 0.3 * (len(self.plot_map[ch_no].lines) - 1), 0.02), textcoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', fontsize=8, bbox=bbox_props)
         for ax in self.axes:
             ax.legend()
-            ax.axis([0, None, 0, 16384])
-            #ax.axis([0, None, 0, 8220])
+            #ax.axis([0, None, 20000, 55000])
+            ax.axis([0, None, 0, 65000])
+            #ax.axis([0, None, 16000*2, 30000*2])
             ax.set_xlabel("Sample #")
             ax.set_ylabel("Value")
         self.canvas.draw()
@@ -161,7 +162,7 @@ class AdcViewerApp(QtWidgets.QMainWindow):
         self.ui = adc_view.Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.ui.channelsSelector.addItems(["All in one", "1 & 2 and 3 & 4", "1, 2, 3, 4"])
+        self.ui.channelsSelector.addItems(["All in one", "0 & 1 and 2 & 3", "0, 1, 2, 3"])
         self.ui.channelsSelector.currentIndexChanged.connect(self.on_channels_select)
 
         self.ui.rateComboBox.addItems(["0.5 Hz", "1 Hz", "10 Hz"])
